@@ -16,7 +16,7 @@ const formSchema = z.object({
 
 const OtpVerification = () => {
     const [isLoading, setIsLoading] = useState<boolean>(false)
-    const [correctOtp, setCorrectOtp] = useState<boolean>(false)
+    const [_correctOtp, setCorrectOtp] = useState<boolean>(false)
     const [expiry, setExpiry] = useState(Date.now() + 30 * 1000); // 30 seconds
     const navigate = useNavigate()
     const location = useLocation()
