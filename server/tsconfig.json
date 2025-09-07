@@ -10,7 +10,8 @@
     // See also https://aka.ms/tsconfig/module
     "module": "NodeNext",
     "target": "ES2022",
-    "types": [],
+    "typeRoots": ["./node_modules/@types", "./"],
+    "types": ["node", "express"],
     // For nodejs:
     // "lib": ["esnext"],
     // "types": ["node"],
