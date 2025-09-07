@@ -82,7 +82,7 @@ const SearchWithAI = () => {
                         />
                         <Button
                             onClick={() => handleRecommadation(input)}
-                            type="submit"
+                            type="button"
                             className="absolute right-14 rounded-full hover:bg-gray-200 top-1/2 -translate-y-1/2 text-gray-400">
                             <Search />
                         </Button>
