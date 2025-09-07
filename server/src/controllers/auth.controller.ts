@@ -49,8 +49,8 @@ const registerUser = async (req: Request, res: Response) => {
 
         res.cookie("accessToken", accessToken, {
             httpOnly: true,
-            secure: false,
-            sameSite: "strict",
+            secure: true,
+            sameSite: "none",
             maxAge: 7 * 24 * 60 * 60 * 1000
         })
         req.user = user
@@ -82,8 +82,8 @@ const loginUser = async (req: Request, res: Response) => {
         const accessToken = await generateAccessToken(user._id.toString())
         res.cookie("accessToken", accessToken, {
             httpOnly: true,
-            secure: false,
-            sameSite: "strict",
+            secure: true,
+            sameSite: "none",
             maxAge: 7 * 24 * 60 * 60 * 1000
         })
         req.user = user
@@ -207,8 +207,8 @@ const googleAuthRegister = async (req: Request, res: Response) => {
         const accessToken = await generateAccessToken(user._id.toString())
         res.cookie("accessToken", accessToken, {
             httpOnly: true,
-            secure: false,
-            sameSite: "strict",
+            secure: true,
+            sameSite: "none",
             maxAge: 7 * 24 * 60 * 60 * 1000
         })
         req.user = user
@@ -234,8 +234,8 @@ const googleAuthLogin = async (req: Request, res: Response) => {
         const accessToken = await generateAccessToken(user._id.toString())
         res.cookie("accessToken", accessToken, {
             httpOnly: true,
-            secure: false,
-            sameSite: "strict",
+            secure: true,
+            sameSite: "none",
             maxAge: 7 * 24 * 60 * 60 * 1000
         })
         req.user = user
