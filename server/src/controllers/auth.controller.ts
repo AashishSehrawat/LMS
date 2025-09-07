@@ -2,10 +2,10 @@ import bcrypt from "bcryptjs"
 import type { Request, Response } from "express"
 import jwt from "jsonwebtoken"
 import validator from "validator"
+import sendEmail from "../config/sendEmail.js"
 import User from "../models/user.model.js"
 import ApiError from "../utils/ApiError.js"
 import ApiResponse from "../utils/ApiResponse.js"
-import sendEmail from "../config/sendEmail.js"
 
 const generateAccessToken = async (userId: string) => {
     try {
@@ -249,4 +249,5 @@ const googleAuthLogin = async (req: Request, res: Response) => {
 }
 
 
-export { loginUser, logoutUser, registerUser, sendOTP, verifyOPT, resetPassword, googleAuthRegister, googleAuthLogin }
+export { googleAuthLogin, googleAuthRegister, loginUser, logoutUser, registerUser, resetPassword, sendOTP, verifyOPT }
+
