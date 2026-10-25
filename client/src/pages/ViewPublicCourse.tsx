@@ -114,8 +114,16 @@ const ViewPublicCourse = () => {
 
   useEffect(() => {
     const getInstructorCourses = () => {
-      const instructorCourses = publicCourses?.filter((courses) => courses.creator === course?.creator._id);
-      setInstructorCourses(instructorCourses!);
+      if (!course || !course.creator || !publicCourses) {
+        setInstructorCourses([]);
+        return;
+      }
+      const creatorId = typeof course.creator === "object" ? course.creator?._id : course.creator;
+      const instructorCourses = publicCourses.filter((c: any) => {
+        const cCreatorId = typeof c.creator === "object" ? c.creator?._id : c.creator;
+        return cCreatorId && creatorId && cCreatorId.toString() === creatorId.toString();
+      });
+      setInstructorCourses(instructorCourses);
     }
     getInstructorCourses();
   }, [publicCourses, course]);
@@ -242,7 +250,7 @@ const ViewPublicCourse = () => {
                 <div className="flex items-center gap-4">
                   <Avatar className="w-10 h-10">
                     <AvatarImage src={course?.creator?.photoUrl} />
-                    <AvatarFallback>{course?.creator?.name.charAt(0).toUpperCase()}</AvatarFallback>
+                    <AvatarFallback>{course?.creator?.name ? course.creator.name.charAt(0).toUpperCase() : "I"}</AvatarFallback>
                   </Avatar>
                   <div>
                     <p className="font-medium">Created by {course?.creator?.name}</p>
@@ -454,12 +462,12 @@ const ViewPublicCourse = () => {
               <div className="flex items-start gap-6">
                 <Avatar className="w-20 h-20">
                   <AvatarImage src={course?.creator?.photoUrl} />
-                  <AvatarFallback>{course?.creator?.name.charAt(0).toUpperCase()}</AvatarFallback>
+                  <AvatarFallback>{course?.creator?.name ? course.creator.name.charAt(0).toUpperCase() : "I"}</AvatarFallback>
                 </Avatar>
 
                 <div className="flex-1">
-                  <h3 className="text-xl font-bold mb-2">{course?.creator?.name}</h3>
-                  <p className="text-muted-foreground mb-4">{course?.creator?.description}</p>
+                  <h3 className="text-xl font-bold mb-2">{course?.creator?.name || "Instructor"}</h3>
+                  <p className="text-muted-foreground mb-4">{course?.creator?.description || "Experienced instructor"}</p>
 
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="text-center">
@@ -467,7 +475,7 @@ const ViewPublicCourse = () => {
                       <div className="text-sm text-muted-foreground">Courses</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-primary">{(course?.creator?.students / 1000).toFixed(0)}k</div>
+                      <div className="text-2xl font-bold text-primary">{course?.creator?.students ? (course.creator.students / 1000).toFixed(0) + "k" : "1k+"}</div>
                       <div className="text-sm text-muted-foreground">Students</div>
                     </div>
                     <div className="text-center">

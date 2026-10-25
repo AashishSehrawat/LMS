@@ -29,31 +29,27 @@ const createCourse = async (req: Request, res: Response) => {
 
 const getPublicCourses = async (req: Request, res: Response) => {
     try {
-        const courses = await Course.find({ isPublished: true }).populate("reviews")
-        if(!courses) {
-            throw new ApiError(404, "Courses not found")
-        }
+        const courses = await Course.find({ isPublished: true })
+            .populate({ path: "creator", select: "name photoUrl description" })
+            .populate("reviews")
         return res
             .status(200)
-            .json(new ApiResponse(200, "Courses fetched successfully", courses))
-    } catch (error) {
+            .json(new ApiResponse(200, "Courses fetched successfully", courses || []))
+    } catch (error: any) {
         console.log("Error in getPublicCourses", error)
-        throw new ApiError(400, "Error in fetching public courses")
+        throw new ApiError(error?.statusCode || 500, error?.message || "Error in fetching public courses")
     }
 }
 
 const getCreatorCourses = async (req: Request, res: Response) => {
     try {
         const courses = await Course.find({ creator: req.user?._id })
-        if(!courses) {
-            throw new ApiError(404, "Courses not found")
-        }
         return res
             .status(200)
-            .json(new ApiResponse(200, "Courses fetched successfully", courses))
-    } catch (error) {
+            .json(new ApiResponse(200, "Courses fetched successfully", courses || []))
+    } catch (error: any) {
         console.log("Error in getCreatorCourses", error)
-        throw new ApiError(400, "Error in fetching creator courses")
+        throw new ApiError(error?.statusCode || 500, error?.message || "Error in fetching creator courses")
     }
 }
 
@@ -110,16 +106,18 @@ const editCourse = async (req: Request, res: Response) => {
 const getCourseById = async (req: Request, res: Response) => {
     try {
         const courseId = req.params?.id
-        const course = await Course.findById(courseId).populate("creator reviews")
+        const course = await Course.findById(courseId)
+            .populate({ path: "creator", select: "-password" })
+            .populate("reviews")
         if(!course) {
             throw new ApiError(404, "Course not found")
         }
         return res
             .status(200)
             .json(new ApiResponse(200, "Course fetched successfully", course))
-    } catch (error) {
+    } catch (error: any) {
         console.log("Error in getCourseById", error)
-        throw new ApiError(400, "Error in fetching course")
+        throw new ApiError(error?.statusCode || 500, error?.message || "Error in fetching course")
     }
 }
 

@@ -80,7 +80,6 @@ const courseLevels = [
 export default function EditCourse() {
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState<boolean>(false)
-    const [saved, setSaved] = useState<boolean>(false)
     const { id } = useParams();
     const dispatch = useDispatch()
 
@@ -146,7 +145,6 @@ export default function EditCourse() {
                 }
             })
             if (res?.data?.success) {
-                setSaved(true)
                 toast.success("Course saved successfully")
             } else {
                 toast.error(res?.data?.data?.message || "Failed to save course")

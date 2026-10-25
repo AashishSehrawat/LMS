@@ -1,4 +1,7 @@
 import mongoose, { Document } from "mongoose";
+import "./user.model.js";
+import "./lecture.model.js";
+import "./review.model.js";
 
 interface ICourse {
     title: string;
