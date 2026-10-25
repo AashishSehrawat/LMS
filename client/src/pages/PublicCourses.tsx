@@ -204,7 +204,7 @@ const PublicCourses = () => {
                     <h3 className="text-lg font-semibold">{course.title}</h3>
                     <span className="text-xs text-muted-foreground bg-primary/10 px-2 py-1 rounded-full">{course.category}</span>
                   </div>
-                  <p className="text-sm text-muted-foreground mt-2 h-16">{course.description.length > 100 ? course.description.slice(0, 100) + "..." : course.description}</p>
+                  <p className="text-sm text-muted-foreground mt-2 h-16">{course.description ? (course.description.length > 100 ? course.description.slice(0, 100) + "..." : course.description) : <span className="italic">No description yet.</span>}</p>
                   <div className="flex items-center gap-2 justify-between">
                     <p className="text-muted-foreground mt-2 flex items-center">
                       <IndianRupee />

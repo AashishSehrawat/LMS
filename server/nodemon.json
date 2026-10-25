@@ -1,0 +1,6 @@
+{
+  "watch": ["dist"],
+  "ignore": ["src", "node_modules", "*.map"],
+  "ext": "js,mjs,cjs,json",
+  "delay": "500"
+}

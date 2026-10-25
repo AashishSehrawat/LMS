@@ -86,7 +86,7 @@ export default function EditCourse() {
 
     const getCourseById = async (id: string) => {
         try {
-            const res = await axios.get(`${import.meta.env.VITE_SERVER_URI}/api/course/course/${id}`,
+            const res = await axios.get(`${import.meta.env.VITE_SERVER_URI}/api/course/${id}`,
                 { withCredentials: true }
             )
             console.log("Course by id", res?.data)
@@ -160,16 +160,12 @@ export default function EditCourse() {
 
     const onPublish = async () => {
         setIsLoading(true)
-        if(!saved){
-            toast.error("Please save the course first")
-            setIsLoading(false)
-            return
-        }
         try {
-            const res = await axios.put(`${import.meta.env.VITE_SERVER_URI}/api/course/edit/${id}`, {
-                isPublished: true
-            }, {
-                withCredentials: true
+            const formdata = new FormData()
+            formdata.append("isPublished", "true")
+            const res = await axios.put(`${import.meta.env.VITE_SERVER_URI}/api/course/edit/${id}`, formdata, {
+                withCredentials: true,
+                headers: { "Content-Type": "multipart/form-data" }
             })
             if (res?.data?.success) {
                 dispatch(triggerPublicCourseRefresh())

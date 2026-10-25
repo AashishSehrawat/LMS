@@ -85,7 +85,10 @@ const editCourse = async (req: Request, res: Response) => {
         if(description) updatedData.description = description
         if(level) updatedData.level = level
         if(price) updatedData.price = price
-        if(isPublished) updatedData.isPublished = isPublished
+        // isPublished comes as a string from FormData ("true"/"false"), parse explicitly
+        if(isPublished !== undefined && isPublished !== null && isPublished !== "") {
+            updatedData.isPublished = isPublished === true || isPublished === "true"
+        }
         if(cloudinaryThumbnailUrl) updatedData.thumbnail = cloudinaryThumbnailUrl
 
         const course = await Course.findByIdAndUpdate(

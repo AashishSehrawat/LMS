@@ -7,18 +7,24 @@ import User from "../models/user.model.js"
 import ApiError from "../utils/ApiError.js"
 import ApiResponse from "../utils/ApiResponse.js"
 
+const isProduction = process.env.NODE_ENV === "production"
+
+// Cookie options: secure cookies only in production (HTTPS)
+// On localhost (HTTP), secure:true blocks the browser from storing the cookie
+const cookieOptions = {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: (isProduction ? "none" : "lax") as "none" | "lax",
+    maxAge: 7 * 24 * 60 * 60 * 1000
+}
+
 const generateAccessToken = async (userId: string) => {
     try {
         const accessToken = jwt.sign(
-            {
-                userId
-            },
+            { userId },
             process.env.ACCESS_TOKEN_SECRET as string,
-            {
-                expiresIn: "7d"
-            }
+            { expiresIn: "7d" }
         )
-        console.log("accessToken in generateAccessToken function : ", accessToken)
         return accessToken
     } catch (error) {
         console.log("Error in generateAccessToken", error)
@@ -29,7 +35,7 @@ const generateAccessToken = async (userId: string) => {
 const registerUser = async (req: Request, res: Response) => {
     try {
         const { name, email, password, role } = req.body
-        if ([name, password, email, role].some((feild) => feild?.trim === "")) {
+        if ([name, password, email, role].some((field) => !field || field?.trim() === "")) {
             throw new ApiError(400, "All fields are required")
         }
 
@@ -43,31 +49,26 @@ const registerUser = async (req: Request, res: Response) => {
         }
 
         const hashedPassword = await bcrypt.hash(password, 10)
-
         const user = await User.create({ name, email, password: hashedPassword, role })
         const accessToken = await generateAccessToken(user._id.toString())
 
-        res.cookie("accessToken", accessToken, {
-            httpOnly: true,
-            secure: true,
-            sameSite: "none",
-            maxAge: 7 * 24 * 60 * 60 * 1000
-        })
+        res.cookie("accessToken", accessToken, cookieOptions)
         req.user = user
 
+        const { password: _pw, ...safeUser } = user.toObject()
         return res
             .status(201)
-            .json(new ApiResponse(201, "User registered successfully", user))
+            .json(new ApiResponse(201, "User registered successfully", safeUser))
     } catch (error) {
         console.log("Error in registerUser", error)
-        throw new ApiError(400, "Error in registerUser")
+        throw error instanceof ApiError ? error : new ApiError(400, "Error in registerUser")
     }
 }
 
 const loginUser = async (req: Request, res: Response) => {
     try {
         const { email, password } = req.body
-        if ([email, password].some((feild) => feild?.trim === "")) {
+        if ([email, password].some((field) => !field || field?.trim() === "")) {
             throw new ApiError(400, "All fields are required")
         }
         const user = await User.findOne({ email })
@@ -80,19 +81,16 @@ const loginUser = async (req: Request, res: Response) => {
         }
 
         const accessToken = await generateAccessToken(user._id.toString())
-        res.cookie("accessToken", accessToken, {
-            httpOnly: true,
-            secure: true,
-            sameSite: "none",
-            maxAge: 7 * 24 * 60 * 60 * 1000
-        })
+        res.cookie("accessToken", accessToken, cookieOptions)
         req.user = user
+
+        const { password: _pw, ...safeUser } = user.toObject()
         return res
             .status(200)
-            .json(new ApiResponse(200, "User logged in successfully", user))
+            .json(new ApiResponse(200, "User logged in successfully", safeUser))
     } catch (error) {
         console.log("Error in loginUser", error)
-        throw new ApiError(400, "Error in loginUser")
+        throw error instanceof ApiError ? error : new ApiError(400, "Error in loginUser")
     }
 }
 
@@ -103,13 +101,13 @@ const logoutUser = async (req: Request, res: Response) => {
             throw new ApiError(400, "User not found")
         }
 
-        res.clearCookie("accessToken")
+        res.clearCookie("accessToken", cookieOptions)
         return res
             .status(200)
-            .json(new ApiResponse(200, "User logged out successfully", user))
+            .json(new ApiResponse(200, "User logged out successfully", {}))
     } catch (error) {
         console.log("Error in logoutUser", error)
-        throw new ApiError(400, "Error in logoutUser")
+        throw error instanceof ApiError ? error : new ApiError(400, "Error in logoutUser")
     }
 }
 
@@ -132,17 +130,17 @@ const sendOTP = async (req: Request, res: Response) => {
 
         return res
             .status(200)
-            .json(new ApiResponse(200, "OTP sent successfully", user))
+            .json(new ApiResponse(200, "OTP sent successfully", {}))
     } catch (error) {
         console.log("Error in sendOTP", error)
-        throw new ApiError(400, "Error in sendOTP")
+        throw error instanceof ApiError ? error : new ApiError(400, "Error in sendOTP")
     }
 }
 
 const verifyOPT = async (req: Request, res: Response) => {
     try {
         const { email, otp } = req.body
-        if ([email, otp].some((feild) => feild?.trim === "")) {
+        if ([email, otp].some((field) => !field || field?.trim() === "")) {
             throw new ApiError(400, "All fields are required")
         }
 
@@ -156,7 +154,7 @@ const verifyOPT = async (req: Request, res: Response) => {
         }
 
         if (user.otpExpiry && user.otpExpiry.getTime() < Date.now()) {
-            throw new ApiError(400, "Invalid OTP")
+            throw new ApiError(400, "OTP has expired")
         }
         user.isOtpVerified = true
         user.resetOtp = undefined
@@ -164,22 +162,22 @@ const verifyOPT = async (req: Request, res: Response) => {
         await user.save()
         return res
             .status(200)
-            .json(new ApiResponse(200, "OTP verified successfully", user))
+            .json(new ApiResponse(200, "OTP verified successfully", {}))
     } catch (error) {
         console.log("Error in verifyOPT", error)
-        throw new ApiError(400, "Error in verifyOPT")
+        throw error instanceof ApiError ? error : new ApiError(400, "Error in verifyOPT")
     }
 }
 
 const resetPassword = async (req: Request, res: Response) => {
     try {
         const { email, password } = req.body
-        if ([email, password].some((feild) => feild?.trim === "")) {
+        if ([email, password].some((field) => !field || field?.trim() === "")) {
             throw new ApiError(400, "All fields are required")
         }
         const user = await User.findOne({ email })
         if (!user || !user.isOtpVerified) {
-            throw new ApiError(400, "OTP verfication is required")
+            throw new ApiError(400, "OTP verification is required")
         } 
         const hashedPassword = await bcrypt.hash(password, 10)
         user.password = hashedPassword
@@ -187,17 +185,17 @@ const resetPassword = async (req: Request, res: Response) => {
         await user.save()
         return res
             .status(200)
-            .json(new ApiResponse(200, "Password reset successfully", user))
+            .json(new ApiResponse(200, "Password reset successfully", {}))
     } catch (error) {
         console.log("Error in resetPassword", error)
-        throw new ApiError(400, "Error in resetPassword")
+        throw error instanceof ApiError ? error : new ApiError(400, "Error in resetPassword")
     }
 }
 
 const googleAuthRegister = async (req: Request, res: Response) => {
     try {
-        const { email, name , role } = req.body
-        if ([email, name, role].some((feild) => feild?.trim === "")) {
+        const { email, name, role } = req.body
+        if ([email, name, role].some((field) => !field || field?.trim() === "")) {
             throw new ApiError(400, "All fields are required")
         }
         let user = await User.findOne({ email })
@@ -205,26 +203,23 @@ const googleAuthRegister = async (req: Request, res: Response) => {
             user = await User.create({ email, name, role })
         } 
         const accessToken = await generateAccessToken(user._id.toString())
-        res.cookie("accessToken", accessToken, {
-            httpOnly: true,
-            secure: true,
-            sameSite: "none",
-            maxAge: 7 * 24 * 60 * 60 * 1000
-        })
+        res.cookie("accessToken", accessToken, cookieOptions)
         req.user = user
+
+        const { password: _pw, ...safeUser } = user.toObject()
         return res
             .status(200)
-            .json(new ApiResponse(200, "Google Auth Success", user))
+            .json(new ApiResponse(200, "Google Auth Success", safeUser))
     } catch (error) {
         console.log("Error in googleAuth", error)
-        throw new ApiError(400, "Error in googleAuth")
+        throw error instanceof ApiError ? error : new ApiError(400, "Error in googleAuth")
     }
 }
 
 const googleAuthLogin = async (req: Request, res: Response) => {
     try {
         const { email } = req.body
-        if ([email].some((feild) => feild?.trim === "")) {
+        if (!email || email.trim() === "") {
             throw new ApiError(400, "Email is required")
         }
         let user = await User.findOne({ email })
@@ -232,22 +227,18 @@ const googleAuthLogin = async (req: Request, res: Response) => {
             throw new ApiError(400, "User not found")
         } 
         const accessToken = await generateAccessToken(user._id.toString())
-        res.cookie("accessToken", accessToken, {
-            httpOnly: true,
-            secure: true,
-            sameSite: "none",
-            maxAge: 7 * 24 * 60 * 60 * 1000
-        })
+        res.cookie("accessToken", accessToken, cookieOptions)
         req.user = user
+
+        const { password: _pw, ...safeUser } = user.toObject()
         return res
             .status(200)
-            .json(new ApiResponse(200, "Google Auth Success", user))
+            .json(new ApiResponse(200, "Google Auth Success", safeUser))
     } catch (error) {
         console.log("Error in googleAuth", error)
-        throw new ApiError(400, "Error in googleAuth")
+        throw error instanceof ApiError ? error : new ApiError(400, "Error in googleAuth")
     }
 }
 
 
 export { googleAuthLogin, googleAuthRegister, loginUser, logoutUser, registerUser, resetPassword, sendOTP, verifyOPT }
-

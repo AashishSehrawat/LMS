@@ -6,10 +6,9 @@ const getCurrentUser = () => async (dispatch: AppDispatch) => {
   try {
     const res = await axios.get(
       `${import.meta.env.VITE_SERVER_URI}/api/user/getCurrentUser`,
-      { withCredentials: true }
+      { withCredentials: true, timeout: 8000 }
     );
 
-    // console.log("User in getCurrentUser frontend: ", res);
     dispatch(setUser(res.data.data));
   } catch (error) {
     console.log("Error in getCurrentUser frontend: ", error);
