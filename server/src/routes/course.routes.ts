@@ -9,10 +9,11 @@ const router = express.Router()
 router.post("/create", verifyJWT, verifyEducator, createCourse)
 router.get("/public", getPublicCourses)
 router.get("/educator", verifyJWT, getCreatorCourses)
+// /search must be before /:id so it isn't caught by the wildcard
+router.post("/search", searchWithAI)
 router.get("/:id", getCourseById)
 router.put("/edit/:id", verifyJWT, verifyEducator, upload.single('thumbnail'), editCourse)
 router.delete("/delete/:id", verifyJWT, verifyEducator, deleteCourse)
-router.post("/search", searchWithAI)
 
 export default router
 

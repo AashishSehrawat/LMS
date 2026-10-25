@@ -6,12 +6,17 @@ import { GoogleGenAI } from "@google/genai"
 import dotenv from "dotenv"
 dotenv.config()
 
+/** Escape special regex chars to avoid MongoDB regex injection errors */
+const escapeRegex = (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+
 const searchWithAI = async (req: Request, res: Response) => {
     try {
         const { query } = req.body
-        if (!query) {
-            throw new ApiError(400, "Input is required")
+        if (!query || !query.trim()) {
+            throw new ApiError(400, "Search query is required")
         }
+
+        const safeQuery = escapeRegex(query.trim())
 
         const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! })
 
@@ -30,49 +35,59 @@ const searchWithAI = async (req: Request, res: Response) => {
             - Intermediate
             - Advanced
         Only reply with one single keyword from the list above that best matches the query. Do not explain anything. No extra text.
-        Query: ${query}
+        Query: ${query.trim()}
         `
 
-        const response = await ai.models.generateContent({
+        const aiResponse = await ai.models.generateContent({
             model: "gemini-2.5-flash",
             contents: prompt,
         });
-        console.log("keyword from AI", response.text);
-        const keyword = response.text 
-        const courses = await Course.find({
+
+        // Trim to remove trailing newlines/whitespace that would break the regex
+        const keyword = aiResponse.text?.trim() ?? ""
+        const safeKeyword = escapeRegex(keyword)
+        console.log("AI keyword:", JSON.stringify(keyword))
+
+        // First: try matching by original query text (title, category, description, etc.)
+        const coursesByQuery = await Course.find({
             isPublished: true,
             $or: [
-                { title: { $regex: query, $options: "i" } },
-                { category: { $regex: query, $options: "i" } },
-                { subTitle: { $regex: query, $options: "i" } },
-                { description: { $regex: query, $options: "i" } },
-                { level: { $regex: query, $options: "i" } },
+                { title: { $regex: safeQuery, $options: "i" } },
+                { category: { $regex: safeQuery, $options: "i" } },
+                { subTitle: { $regex: safeQuery, $options: "i" } },
+                { description: { $regex: safeQuery, $options: "i" } },
+                { level: { $regex: safeQuery, $options: "i" } },
             ]
         })
 
-        if(courses.length > 0) {
+        if (coursesByQuery.length > 0) {
             return res
                 .status(200)
-                .json(new ApiResponse(200, "Courses fetched successfully", courses))
-        } else {
-            const courses = await Course.find({
+                .json(new ApiResponse(200, "Courses fetched successfully", coursesByQuery))
+        }
+
+        // Fallback: use AI-extracted keyword if original query had no match
+        const coursesByKeyword = safeKeyword
+            ? await Course.find({
                 isPublished: true,
                 $or: [
-                    { title: { $regex: keyword, $options: "i" } },
-                    { category: { $regex: keyword, $options: "i" } },
-                    { subTitle: { $regex: keyword, $options: "i" } },
-                    { description: { $regex: keyword, $options: "i" } },
-                    { level: { $regex: keyword, $options: "i" } },
+                    { title: { $regex: safeKeyword, $options: "i" } },
+                    { category: { $regex: safeKeyword, $options: "i" } },
+                    { subTitle: { $regex: safeKeyword, $options: "i" } },
+                    { description: { $regex: safeKeyword, $options: "i" } },
+                    { level: { $regex: safeKeyword, $options: "i" } },
                 ]
             })
-            return res
-                .status(200)
-                .json(new ApiResponse(200, "Courses fetched successfully", courses))
-        }
-    } catch (error) {
+            : []
+
+        return res
+            .status(200)
+            .json(new ApiResponse(200, "Courses fetched successfully", coursesByKeyword))
+
+    } catch (error: any) {
         console.log("Error in searchWithAI", error)
-        throw new ApiError(400, "Error in searchWithAI")
+        throw new ApiError(error?.statusCode || 500, error?.message || "Error in search")
     }
 }
 
-export { searchWithAI }
+export { searchWithAI }
